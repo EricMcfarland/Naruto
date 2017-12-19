@@ -1,8 +1,8 @@
 ﻿#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
 ; #Warn  ; Enable warnings to assist with detecting common errors.
-SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
-
+;this is a random comment
 #SingleInstance, Force
 ;Milestones
 ;[X] Make simple GUI
@@ -29,7 +29,8 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 ;!! Start Special missions
 ;[]specify which mission
-;[] drag scroll to lower mission
+	;[] drag scroll to lower mission
+	;!!!!!!!!!!!!DRAG WILL STEAL MOUSE FOCUS
 ;[]Use vision logic
 
 
@@ -53,18 +54,20 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;6) Click to loot rewards. Wait some time
 ;6) Repeat (if starts at mission screen again)
 
-SetWorkingDir, D:\AutoHotKey\Naruto\Images
+SetWorkingDir, D:\AutoHotKey\Scripts\Naruto\Images
 
 ;-------------Gui Layout ------------
 
  
- PosX := 200
-PosY := 400 
 State:= "Initial State"
 ElapsedTime := 0
 CoordMode Pixel, Screen
 CoordMode Mouse, Screen
-Gui, Add, Text, cAqua x10 y10 vElapsedTime, ElapsedTime: %ElapsedTime%	
+gui, font, cgray
+Gui, +Resize +LastFound
+gui, Add, Tab2,AltSubmit -Wrap , Main|ClickDrag
+Gui, Tab, 1
+Gui, Add, Text, cAqua vElapsedTime, ElapsedTime: %ElapsedTime%	
 ; Gui, Add, Edit, r1 vPosX number, %PosX%
 ; Gui, Add, Edit, r1 vPosY number, %PosY%
 ;gui, add, text, cGreen w100 r1 vElapsedTime, ElaspedTime: %ElapsedTime%
@@ -73,16 +76,32 @@ Gui, Add, Button, w75 r1 gAttackMission, Attack Mission
 Gui, Add, Button, w75 gSpecialMission, Special Mission
 gui, Add, Edit, x+10 w40, 
 gui, add, UpDown, x+10, 0
-gui, Add, Button, x75 w100 h20 gSearchForCertainImage, Search for Image
+gui, Add, Button, w100 h20 gSearchForCertainImage, Search for Image
+
 gui, Add, Button, w100 r1 gUpdateState, Test for state updates
 gui, Add, Button, w100 h25 gTest2, Test for Touch
+Gui,Tab,2
+StartX:=2090
+StartY:=650
+EndX:=2090
+EndY:=300
+gui,add,text,,StartX
+gui,Add,Edit, r1 vStartX, %StartX%
+gui,add,text,,EndX
+gui,Add,Edit, r1 vEndX, %EndX%
+gui,add,text,,StartY
+gui,Add,Edit, r1 vStartY, %StartY%
+gui,add, Text,,EndY
+gui,Add,Edit, r1 vEndY, %EndY%
+
+gui, add, button,  w100 h25 gScroll, Click and drag
 
 ;x+50 adds 50 pixels to the previous element, If yo u
 ;A new Gui, Add, Text will start an element on the next line
 							
 Gui, Font, s17 cBlack
 Gui, Color, Grey ;Hex Code works HTML
-Gui, Show, x1600 y20 w300 h300 NA, GUI
+Gui, Show, x1400 y20 w350 h400 NA, GUI
 return
 
 
@@ -246,7 +265,14 @@ UpdateState:
 	TimeUpdate("10")
 	StateUpdate("This is an update")
 	return
-	
+
+Scroll:
+	GuiControlGet, StartX
+	GuiControlGet, StartY
+	GuiControlGet, EndX
+	GuiControlGet, EndY
+	ClickAndDrag(StartX,StartY,EndX, EndY)
+return	
 StateUpdate(NewState){
 	GuiControl,,State, %NewState%
 	Return
@@ -259,6 +285,10 @@ TimeUpdate(NewTime){
 
 		
 ;--------Function-----------------------
+ClickAndDrag(StartPosX, StartPosY,EndPosX, EndPosY,Speed){
+	MouseClickDrag, Left, StartPosX, StartPosY, EndPosX, EndPosY, 65
+		
+}
 ClickAtLocation(LocPosX,LocPosY){
 	;MouseClick, left, LocPosX, LocPosY, 2, D
 	ControlClick,  x%LocPosX% y%LocPosY%, Main game,
