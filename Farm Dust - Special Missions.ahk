@@ -27,10 +27,15 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;[] Ult after 'Enemy appears'
 ;[] Review macro level design. Handle outlier cases such as lvl up and academy upgrades
 
-;!! Start Special missions
-;[]specify which mission
-	;[] drag scroll to lower mission
-	;!!!!!!!!!!!!DRAG WILL STEAL MOUSE FOCUS
+; Start Special missions
+;[X]specify which mission
+;[X]specify Difficulty
+;[X]Press small Ok btn
+;[X]Press auto
+;[X]Press first Touch
+;[X]Press second Touch
+;!!!!!![]Loop
+	
 ;[]Use vision logic
 
 
@@ -67,16 +72,19 @@ gui, font, cgray
 Gui, +Resize +LastFound
 gui, Add, Tab2,AltSubmit -Wrap , Main|ClickDrag
 Gui, Tab, 1
-Gui, Add, Text, cAqua vElapsedTime, ElapsedTime: %ElapsedTime%	
+Gui, Add, Text, x+10 y+10 cAqua vElapsedTime, ElapsedTime: %ElapsedTime%	
 ; Gui, Add, Edit, r1 vPosX number, %PosX%
 ; Gui, Add, Edit, r1 vPosY number, %PosY%
 ;gui, add, text, cGreen w100 r1 vElapsedTime, ElaspedTime: %ElapsedTime%
 gui, add, text, w250 cGreen r1 vState, %State%
 Gui, Add, Button, w75 r1 gAttackMission, Attack Mission
 Gui, Add, Button, w75 gSpecialMission, Special Mission
-gui, Add, Edit, x+10 w40, 
-gui, add, UpDown, x+10, 0
-gui, Add, Button, w100 h20 gSearchForCertainImage, Search for Image
+gui, Add, Text, x+10 w40 h30, 
+gui, add, UpDown, x+10 vMissionNumber Range1-5, 1 
+gui, Add, Text, x+10 w40 h30,
+gui, add, UpDown, x+10 vDifficultyNumber Range1-4, 1
+
+gui, Add, Button, y+20 w100 h20 gSearchForCertainImage, Search for Image
 
 gui, Add, Button, w100 r1 gUpdateState, Test for state updates
 gui, Add, Button, w100 h25 gTest2, Test for Touch
@@ -94,7 +102,7 @@ gui,Add,Edit, r1 vStartY, %StartY%
 gui,add, Text,,EndY
 gui,Add,Edit, r1 vEndY, %EndY%
 
-gui, add, button,  w100 h25 gScroll, Click and drag
+
 
 ;x+50 adds 50 pixels to the previous element, If yo u
 ;A new Gui, Add, Text will start an element on the next line
@@ -105,7 +113,7 @@ Gui, Show, x1400 y20 w350 h400 NA, GUI
 return
 
 
-;---------Labels---------------------\
+;---------Main Routines---------------------\
 	
 AttackMission:
 	IfWinExist, Main game
@@ -133,10 +141,10 @@ AttackMission:
 		;Ult
 			;gosub PressUlt
 		;Touch for Victory screen
-			gosub, touch1
+			gosub, touch
 			;Sleep 5000
 		;Touch for Spoils screen
-			gosub, touch2
+			gosub, touch
 			Sleep 8000
 	} 
 	msgbox, Out of tokens
@@ -144,14 +152,122 @@ AttackMission:
 	return 
 
 SpecialMission:
+;Use GUI Updowns to set mission and difficulty
+;Click on Special Mission Icon
+;Select Mission based on updown 
+;Select Difficulty (Click on difficulty, if details not present then click on difficulty then Next, else just clikc Next
+;Click Next
+;Click small Ok
+;Check if not enough LP by looking for NO Button
+;Press Auto
+;Press Touch1
+;Press Touch2
+;Repeat
+
+gosub startSpecialMission
+sleep 1000
+Gosub selectSpecialMission
+sleep 2000
+gosub selectDifficulty
+gosub OkBtnSmall
+gosub AutoBtn
+gosub Touch
+gosub Touch
+
 return	
 
+
+;-------------Sub Routines----------------
 ; WindowMax:		;improve this
 	; Random, PosX, 1395, 1405
 	; Random, PosY, 13, 17
 	; ClickAtLocation(PosX, PosY)
 	; return	
+	
+startSpecialMission:
+	Random, PosX, 980, 1130
+	Random, PosY, 300, 430
+	StateUpdate("Clicked at: " . PosX . "," . PosY . ". Started Special Mission") 
+	ClickAtLocation(PosX, PosY)
+return
 
+selectSpecialMission:
+	Gui,Submit, NoHide
+	StateUpdate("Mission number: " . MissionNumber . ". Difficulty: " . DifficultyNumber)
+	Sleep 500
+	if(MissionNumber <4){
+		Random PosX, 500,1200
+		Random PosY, 120 + MissionNumber *230, 240 + MissionNumber *230
+		StateUpdate("Clicked at: " . PosX . "," . PosY . ". Special Mission " . MissionNumber . " Selected") 
+		ClickAtLocation(PosX, PosY)		
+	} else{
+		Random PosX, 1480, 1490
+		Random PosY, 860, 880
+		StateUpdate("Scrolled down")
+		ClickAtLocation(PosX, PosY)
+		sleep 500
+		
+		Random PosX, 500,1200
+		Random PosY, 270 + (MissionNumber -3) *230, 300 + (MissionNumber-3) *230
+		StateUpdate("Clicked at: " . PosX . "," . PosY . ". Special Mission " . MissionNumber . " Selected") 
+		ClickAtLocation(PosX, PosY)	
+		
+	}
+	return
+selectDifficulty:
+	;Look for NEXT button before continuing
+	t:=0
+	Loop{
+		Sleep 500
+		TimeUpdate(t)
+		t+=500
+	}Until (t>8000 or SearchForImage("NEXT.png"))
+	
+	;Click on correct diff setting
+	Gui, Submit, NoHide
+	StateUpdate("Mission number: " . MissionNumber . ". Difficulty: " . DifficultyNumber)
+	Random PosX, 260,750
+	Random PosY, 180 + DifficultyNumber *145, 190 + DifficultyNumber *145
+	ClickAtLocation(PosX, PosY)	
+	Sleep 500
+	
+	;If Details is present then click Next
+	if(SearchForImage("Details.png")){	;If details is present after clicking mission number proceed to press next
+		StateUpdate("Details found")
+		Random PosX, 960, 1180
+		Random PosY, 910, 960
+		ClickAtLocation(PosX, PosY)
+	} else{								;If details is not present then no mission is slected so reselect mission
+		StateUpdate("Mission Reslected and Nextpressed")
+		sleep 700
+		Random PosX, 260,750
+		Random PosY, 180 + DifficultyNumber *145, 200 + DifficultyNumber *145
+		ClickAtLocation(PosX, PosY)
+		
+		sleep 700
+		;Press Next
+		Random PosX, 960, 1180
+		Random PosY, 910, 960
+		ClickAtLocation(PosX, PosY)
+	}	
+return
+okBtnSmall:
+	t:=0
+	Loop{
+		Sleep, 500
+		TimeUpdate(t)
+		t+=500
+		
+		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
+		;	Then set that window back to active on next loop WinActivate LastWindow
+	}Until ( t>22000 or SearchForImage("OkButtonSmall.png"))
+	Random, PosX, 765, 875
+	Random, PosY, 910, 940
+	StateUpdate("Clicked at: " . PosX . "," . PosY . ". OkButton pressed")
+	ClickAtLocation(PosX, PosY)
+	sleep 1000
+	return
+return
 startAtkMis:
 	
 	Random, PosX, 540, 710
@@ -164,23 +280,27 @@ confirmAtkMis:
 	Random, PosX, 1000, 1120
 	Random, PosY, 755, 795
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". Confirm pressed")
-	t:=0
+	
 	ClickAtLocation(PosX, PosY) 
+	return
+okBtn:
+	t:=0
 	Loop{
-		Sleep, 1000
+		Sleep, 500
 		TimeUpdate(t)
-		t+=1000
+		t+=500
 		
 		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
 		;	Then set that window back to active on next loop WinActivate LastWindow
 	}Until ( t>22000 or SearchForImage("OkButton.png"))
 	sleep 1000
-	return
-okBtn:
 	Random, PosX, 765, 875
 	Random, PosY, 910, 940
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". OkButton pressed")
 	ClickAtLocation(PosX, PosY)
+	
+	Return
+autoBtn:
 	t:=0
 	Loop{
 		Sleep, 1000
@@ -191,32 +311,11 @@ okBtn:
 		;	Then set that window back to active on next loop WinActivate LastWindow
 	}Until ( t>20000 or SearchForImage("AutoButton.png"))
 	sleep 1000
-	Return
-autoBtn:
-	
-	t:= 0
 	Random, PosX, 740, 890
 	Random, PosY, 975, 990
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". AutoButton pressed")
 	ClickAtLocation(PosX, PosY) 
-	;sleep 30000
-	t:=0
-	Loop{
-		;!!!Prob need to search more often. Use manual test to see if imagefound
-		; if(SearchForImage("Enemy.png")){
-			; Sleep 4000
-			; loop 4{
-			; ClickAtLocation(1550,680)
-			; sleep 500
-			; }
-		; }
-		Sleep, 1000
-		TimeUpdate(t)
-		t+=1000
-		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
-		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until ( t>220000 or SearchForImage("Touch.png"))
-	sleep 1000
+	
 	return
 	
 PressUlt:
@@ -236,28 +335,29 @@ PressUlt:
 	}Until ( t>190000 or SearchForImage("Touch.png"))
 	return
 
-touch1:
-	
+touch:
+	t:=0
+	Loop{
+		;!!!Prob need to search more often. Use manual test to see if imagefound
+		; if(SearchForImage("Enemy.png")){
+			; Sleep 4000
+			; loop 4{
+			; ClickAtLocation(1550,680)
+			; sleep 500
+			; }
+		; }
+		Sleep, 500
+		TimeUpdate(t)
+		t+=500
+		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
+		;	Then set that window back to active on next loop WinActivate LastWindow
+	}Until ( t>222000 or SearchForImage("Touch.png"))
+	sleep 1000
 	Random, PosX, 550, 1110
 	Random, PosY, 800, 950
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". First Touch pressed")
 	ClickAtLocation(PosX, PosY)
 	t:=0
-	Loop{
-		Sleep, 1000
-		TimeUpdate(t)
-		t+=1000
-		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
-		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until ( t>19000 or SearchForImage("Touch.png"))
-	sleep 1000
-	return 
-	
-touch2:
-	Random, PosX, 550, 1110
-	Random, PosY, 800, 950
-	StateUpdate("Clicked at: " . PosX . "," . PosY . ". Second Touch pressed")
-	ClickAtLocation(PosX, PosY)
 	return 
 	
 	
@@ -266,13 +366,7 @@ UpdateState:
 	StateUpdate("This is an update")
 	return
 
-Scroll:
-	GuiControlGet, StartX
-	GuiControlGet, StartY
-	GuiControlGet, EndX
-	GuiControlGet, EndY
-	ClickAndDrag(StartX,StartY,EndX, EndY)
-return	
+
 StateUpdate(NewState){
 	GuiControl,,State, %NewState%
 	Return
@@ -285,10 +379,7 @@ TimeUpdate(NewTime){
 
 		
 ;--------Function-----------------------
-ClickAndDrag(StartPosX, StartPosY,EndPosX, EndPosY,Speed){
-	MouseClickDrag, Left, StartPosX, StartPosY, EndPosX, EndPosY, 65
-		
-}
+
 ClickAtLocation(LocPosX,LocPosY){
 	;MouseClick, left, LocPosX, LocPosY, 2, D
 	ControlClick,  x%LocPosX% y%LocPosY%, Main game,
@@ -332,7 +423,7 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 			lowerY:= 75
 			upperY:= 125
 		} 
-		else if(Img = "OkButton.png"){
+		else if(Img = "OkButton.png" or Img ="OkButtonSmall.png"){
 			lowerX:= 640+1920
 			upperX:= 1025+1920
 			lowerY:= 837
@@ -342,6 +433,17 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 			upperX:= 1025+1920
 			lowerY:= 937
 			upperY:= 1050
+		}else if(Img = "NEXT.png"){
+			lowerX:= 890+1920
+			lowerY:= 860
+			upperX:=1270+1920
+			upperY:= 1050
+		
+		}else if(Img = "Details.png"){
+			lowerX:= 1110+1920
+			lowerY:= 700
+			upperX:=1440+1920
+			upperY:= 800
 		} else {
 			lowerX := 10
 			upperX := 30
@@ -372,7 +474,7 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 ;--------------Test things ------------------
 SearchForCertainImage:
 
-	if(SearchForImage("Enemy.png")){
+	if(SearchForImage("OkButtonSmall.png")){
 	msgbox, image found 
 	}
 	else{
