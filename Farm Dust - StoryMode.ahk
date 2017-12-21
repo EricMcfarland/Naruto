@@ -35,8 +35,9 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;[X]Press first Touch
 ;[X]Press second Touch
 ;!!!!!![]Loop
-	;li change
-;[]Use vision logic
+	
+; Start Story Mode
+
 
 
 ;Optional
@@ -122,19 +123,15 @@ AttackMission:
 		WinActivate, Calculator
 	
 	;Loop while attack mission token exists
-	Loop{
+	While(SearchForImage("AttackMissionToken.png")){
+		;try to Maximize (Find more reliable way to do this)
+			; Gosub, WindowMax
+			; Sleep 500
 		;Click on attack mission
 			Gosub, startAtkMis
 			Sleep 2000
 		;Cofirm spending of attack token
 			Gosub, confirmAtkMis
-			sleep 2000
-			if(SearchForImage("YES.png")){
-				Random PosX, 1420, 1430
-				Random PosY, 190, 200
-				ClickAtLocation(PosX, PosY)
-				return 
-			}else{
 			;Sleep 13000
 		;Click ok to deploy troops
 			gosub, okBtn 
@@ -150,8 +147,7 @@ AttackMission:
 		;Touch for Spoils screen
 			gosub, touch
 			Sleep 8000
-		}
-	}
+	} 
 	msgbox, Out of tokens
 	
 	return 
@@ -169,26 +165,15 @@ SpecialMission:
 ;Press Touch2
 ;Repeat
 
-Loop {
-	gosub startSpecialMission
-	sleep 1000
-	Gosub selectSpecialMission
-	sleep 2000
-	gosub selectDifficulty
-	sleep 2000
-		if(SearchForImage("YES.png")){
-			Random PosX, 1420, 1430
-			Random PosY, 190, 200
-			ClickAtLocation(PosX, PosY)
-			StateUpdate("Out of resource. Loop broken")
-			return 
-		}else{
-		gosub OkBtnSmall
-		gosub AutoBtn
-		gosub Touch
-		gosub Touch
-	}
-}
+gosub startSpecialMission
+sleep 1000
+Gosub selectSpecialMission
+sleep 2000
+gosub selectDifficulty
+gosub OkBtnSmall
+gosub AutoBtn
+gosub Touch
+gosub Touch
 
 return	
 
@@ -460,12 +445,7 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 			lowerY:= 700
 			upperX:=1440+1920
 			upperY:= 800
-		} else if(Img = "YES.png"){
-			lowerX:= 900+1920
-			lowerY:= 700
-			upperX:=1200+1920
-			upperY:= 900
-		}else {
+		} else {
 			lowerX := 10
 			upperX := 30
 			lowerY:= 10
@@ -495,7 +475,7 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 ;--------------Test things ------------------
 SearchForCertainImage:
 
-	if(SearchForImage("YES.png")){
+	if(SearchForImage("OkButtonSmall.png")){
 	msgbox, image found 
 	}
 	else{
