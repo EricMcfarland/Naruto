@@ -66,6 +66,7 @@ SetWorkingDir, D:\AutoHotKey\Scripts\Naruto\Images
  
 State:= "Initial State"
 ElapsedTime := 0
+SleepTime:=500
 CoordMode Pixel, Screen
 CoordMode Mouse, Screen
 gui, font, cgray
@@ -77,6 +78,8 @@ Gui, Add, Text, x+10 y+10 cAqua vElapsedTime, ElapsedTime: %ElapsedTime%
 ; Gui, Add, Edit, r1 vPosY number, %PosY%
 ;gui, add, text, cGreen w100 r1 vElapsedTime, ElaspedTime: %ElapsedTime%
 gui, add, text, w250 cGreen r1 vState, %State%
+gui, add, text, w250 cRed r1, SleepTime(ms)
+gui, add, Edit, w75 r1 vSleepTime, %SleepTime%
 Gui, Add, Button, w75 r1 gAttackMission, Attack Mission
 Gui, Add, Button, w75 gSpecialMission, Special Mission
 gui, Add, Text, x+10 w40 h30, 
@@ -125,31 +128,23 @@ AttackMission:
 	Loop{
 		;Click on attack mission
 			Gosub, startAtkMis
-			Sleep 2000
+			Sleep 4*SleepTime
 		;Cofirm spending of attack token
 			Gosub, confirmAtkMis
-			sleep 2000
+			sleep 4*SleepTime
 			if(SearchForImage("YES.png")){
 				Random PosX, 1420, 1430
 				Random PosY, 190, 200
 				ClickAtLocation(PosX, PosY)
 				return 
 			}else{
-			;Sleep 13000
-		;Click ok to deploy troops
 			gosub, okBtn 
-			;sleep 10000
-		;Click auto
 			gosub, autoBtn
-			;sleep 240000
 		;Ult
 			;gosub PressUlt
-		;Touch for Victory screen
 			gosub, touch
-			;Sleep 5000
-		;Touch for Spoils screen
 			gosub, touch
-			Sleep 8000
+			Sleep 15*SleepTime
 		}
 	}
 	msgbox, Out of tokens
@@ -168,14 +163,14 @@ SpecialMission:
 ;Press Touch1
 ;Press Touch2
 ;Repeat
-
+gosub startSpecialMission
+	sleep 2*SleepTime
 Loop {
-	gosub startSpecialMission
-	sleep 1000
+	
 	Gosub selectSpecialMission
-	sleep 2000
+	sleep 4*SleepTime
 	gosub selectDifficulty
-	sleep 2000
+	sleep 4*SleepTime
 		if(SearchForImage("YES.png")){
 			Random PosX, 1420, 1430
 			Random PosY, 190, 200
@@ -187,6 +182,7 @@ Loop {
 		gosub AutoBtn
 		gosub Touch
 		gosub Touch
+		Sleep 15*SleepTime
 	}
 }
 
@@ -210,7 +206,7 @@ return
 selectSpecialMission:
 	Gui,Submit, NoHide
 	StateUpdate("Mission number: " . MissionNumber . ". Difficulty: " . DifficultyNumber)
-	Sleep 500
+	Sleep SleepTime
 	if(MissionNumber <4){
 		Random PosX, 500,1200
 		Random PosY, 120 + MissionNumber *230, 240 + MissionNumber *230
@@ -221,7 +217,7 @@ selectSpecialMission:
 		Random PosY, 860, 880
 		StateUpdate("Scrolled down")
 		ClickAtLocation(PosX, PosY)
-		sleep 500
+		sleep SleepTime
 		
 		Random PosX, 500,1200
 		Random PosY, 270 + (MissionNumber -3) *230, 300 + (MissionNumber-3) *230
@@ -234,10 +230,10 @@ selectDifficulty:
 	;Look for NEXT button before continuing
 	t:=0
 	Loop{
-		Sleep 500
+		Sleep SleepTime
 		TimeUpdate(t)
 		t+=500
-	}Until (t>8000 or SearchForImage("NEXT.png"))
+	}Until (SearchForImage("NEXT.png"))
 	
 	;Click on correct diff setting
 	Gui, Submit, NoHide
@@ -245,7 +241,7 @@ selectDifficulty:
 	Random PosX, 260,750
 	Random PosY, 180 + DifficultyNumber *145, 190 + DifficultyNumber *145
 	ClickAtLocation(PosX, PosY)	
-	Sleep 500
+	Sleep 3*SleepTime
 	
 	;If Details is present then click Next
 	if(SearchForImage("Details.png")){	;If details is present after clicking mission number proceed to press next
@@ -255,12 +251,12 @@ selectDifficulty:
 		ClickAtLocation(PosX, PosY)
 	} else{								;If details is not present then no mission is slected so reselect mission
 		StateUpdate("Mission Reslected and Nextpressed")
-		sleep 700
+		sleep 2*SleepTime
 		Random PosX, 260,750
-		Random PosY, 180 + DifficultyNumber *145, 200 + DifficultyNumber *145
+		Random PosY, 200 + DifficultyNumber *150, 240 + DifficultyNumber *150
 		ClickAtLocation(PosX, PosY)
 		
-		sleep 700
+		sleep 3*SleepTime
 		;Press Next
 		Random PosX, 960, 1180
 		Random PosY, 910, 960
@@ -270,18 +266,18 @@ return
 okBtnSmall:
 	t:=0
 	Loop{
-		Sleep, 500
+		Sleep, SleepTime
 		TimeUpdate(t)
 		t+=500
 		
 		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
 		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until ( t>22000 or SearchForImage("OkButtonSmall.png"))
+	}Until (SearchForImage("OkButtonSmall.png"))
 	Random, PosX, 765, 875
 	Random, PosY, 910, 940
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". OkButton pressed")
 	ClickAtLocation(PosX, PosY)
-	sleep 1000
+	sleep 2*SleepTime
 	return
 return
 startAtkMis:
@@ -292,7 +288,7 @@ startAtkMis:
 	ClickAtLocation(PosX, PosY)
 	return	
 confirmAtkMis:
-
+	Gui,Submit, NoHide
 	Random, PosX, 1000, 1120
 	Random, PosY, 755, 795
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". Confirm pressed")
@@ -302,13 +298,13 @@ confirmAtkMis:
 okBtn:
 	t:=0
 	Loop{
-		Sleep, 500
+		Sleep, SleepTime
 		TimeUpdate(t)
 		t+=500
 		
 		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
 		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until ( t>22000 or SearchForImage("OkButton.png"))
+	}Until (SearchForImage("OkButton.png"))
 	sleep 1000
 	Random, PosX, 765, 875
 	Random, PosY, 910, 940
@@ -319,14 +315,14 @@ okBtn:
 autoBtn:
 	t:=0
 	Loop{
-		Sleep, 1000
+		Sleep, 2*SleepTime
 		TimeUpdate(t)
 		t+=1000
 		
 		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
 		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until ( t>20000 or SearchForImage("AutoButton.png"))
-	sleep 1000
+	}Until (SearchForImage("AutoButton.png"))
+	sleep 2*SleepTime
 	Random, PosX, 740, 890
 	Random, PosY, 975, 990
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". AutoButton pressed")
@@ -348,7 +344,7 @@ PressUlt:
 		t+=1000
 		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
 		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until ( t>190000 or SearchForImage("Touch.png"))
+	}Until (SearchForImage("Touch.png"))
 	return
 
 touch:
@@ -362,13 +358,13 @@ touch:
 			; sleep 500
 			; }
 		; }
-		Sleep, 500
+		Sleep, SleepTime
 		TimeUpdate(t)
 		t+=500
 		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
 		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until ( t>222000 or SearchForImage("Touch.png"))
-	sleep 1000
+	}Until (SearchForImage("Touch.png"))
+	sleep 2*SleepTime
 	Random, PosX, 550, 1110
 	Random, PosY, 800, 950
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". First Touch pressed")
