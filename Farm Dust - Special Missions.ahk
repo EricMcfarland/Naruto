@@ -23,9 +23,11 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;	[SOLVED]!!!!!!!!!!!!!!!!!!!!!!Nox keeps stealing focus!!!!!!
 ; 		-Can use absolute coords and not even activate window Ever. (This may be easier)
 ;[X] Search for OK Button (in order to deal with connection errors. 
+;[] Adjustable resolution
 ;[]Will need a break if it doesn't find Auto some time after)
 ;[] Ult after 'Enemy appears'
 ;[] Review macro level design. Handle outlier cases such as lvl up and academy upgrades
+;[] Change click coords for various size screens
 
 ; Start Special missions
 ;[X]specify which mission
@@ -43,22 +45,6 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;[X] Randomize click locations in area for bot correction
 	;[] Narrow range 
 
-
-
-;*****How to keep looking for Touch ****
-;
-
-;****Attack Mission Logic*****
-; Need to maximize window regardless of initial window size. WinMaximize isn't working
-; Will start at Mission Screen
-;1) Click in Attack Mission area. Wait some time (experiment)
-;2) Confirm spending an attack token. Wait some time (experiment n +6seconds)
-;3) Hit OK. Wait some time
-;4) Click auto. Wait a long time (Full 240 seconds at first)
-;5) Click in touch area to clear victory Screen. Wait some time
-;6) Click to loot rewards. Wait some time
-;6) Repeat (if starts at mission screen again)
-
 SetWorkingDir, D:\AutoHotKey\Scripts\Naruto\Images
 
 ;-------------Gui Layout ------------
@@ -67,6 +53,10 @@ SetWorkingDir, D:\AutoHotKey\Scripts\Naruto\Images
 State:= "Initial State"
 ElapsedTime := 0
 SleepTime:=500
+global XRes:= 1600
+global YRes:= 900
+global XUnits:= XRes//100
+global YUnits:= YRes//100
 CoordMode Pixel, Screen
 CoordMode Mouse, Screen
 gui, font, cgray
@@ -119,6 +109,16 @@ return
 ;---------Main Routines---------------------\
 	
 AttackMission:
+;****Attack Mission Logic*****
+; Need to maximize window regardless of initial window size. WinMaximize isn't working
+; Will start at Mission Screen
+;1) Click in Attack Mission area. Wait some time (experiment)
+;2) Confirm spending an attack token. Wait some time (experiment n +6seconds)
+;3) Hit OK. Wait some time
+;4) Click auto. Wait a long time (Full 240 seconds at first)
+;5) Click in touch area to clear victory Screen. Wait some time
+;6) Click to loot rewards. Wait some time
+;6) Repeat (if starts at mission screen again)
 	IfWinExist, Main game
 		WinActivate, Main game
 	else
@@ -128,13 +128,14 @@ AttackMission:
 	Loop{
 		;Click on attack mission
 			Gosub, startAtkMis
-			Sleep 4*SleepTime
+			
 		;Cofirm spending of attack token
 			Gosub, confirmAtkMis
-			sleep 4*SleepTime
-			if(SearchForImage("YES.png")){
-				Random PosX, 1420, 1430
-				Random PosY, 190, 200
+			Sleep 4*SleepTime
+			if(SearchForImage("Yes1600x900.png")){
+				;click X due to no resources
+				Random PosX, 84*XUnits, 85*XUnits
+				Random PosY, 14*YUnits, 15*YUnits
 				ClickAtLocation(PosX, PosY)
 				return 
 			}else{
@@ -168,12 +169,11 @@ gosub startSpecialMission
 Loop {
 	
 	Gosub selectSpecialMission
-	sleep 4*SleepTime
 	gosub selectDifficulty
 	sleep 4*SleepTime
-		if(SearchForImage("YES.png")){
-			Random PosX, 1420, 1430
-			Random PosY, 190, 200
+		if(SearchForImage("Yes1600x900.png")){
+			Random PosX, 84*XUnits, 85*XUnits
+			Random PosY, 14*YUnits, 15*YUnits
 			ClickAtLocation(PosX, PosY)
 			StateUpdate("Out of resource. Loop broken")
 			return 
@@ -197,30 +197,35 @@ return
 	; return	
 	
 startSpecialMission:
-	Random, PosX, 980, 1130
-	Random, PosY, 300, 430
+	Random, PosX, 58*XUnits, 65*XUnits
+	Random, PosY, 27*YUnits, 38*YUnits
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". Started Special Mission") 
 	ClickAtLocation(PosX, PosY)
 return
 
 selectSpecialMission:
+	Loop{
+		Sleep SleepTime
+		TimeUpdate(t)
+		t+=500
+	}Until (SearchForImage("SpecialMission1600x900.png"))
 	Gui,Submit, NoHide
 	StateUpdate("Mission number: " . MissionNumber . ". Difficulty: " . DifficultyNumber)
 	Sleep SleepTime
 	if(MissionNumber <4){
-		Random PosX, 500,1200
-		Random PosY, 120 + MissionNumber *230, 240 + MissionNumber *230
+		Random PosX, 18*XUnits,75*XUnits
+		Random PosY, 11*YUnits + MissionNumber *25*YUnits, 17*YUnits + MissionNumber *25*YUnits
 		StateUpdate("Clicked at: " . PosX . "," . PosY . ". Special Mission " . MissionNumber . " Selected") 
 		ClickAtLocation(PosX, PosY)		
 	} else{
-		Random PosX, 1480, 1490
-		Random PosY, 860, 880
+		Random PosX, 87*XUnits, 88*XUnits
+		Random PosY, 86*YUnits, 87*YUnits
 		StateUpdate("Scrolled down")
 		ClickAtLocation(PosX, PosY)
 		sleep SleepTime
 		
-		Random PosX, 500,1200
-		Random PosY, 270 + (MissionNumber -3) *230, 300 + (MissionNumber-3) *230
+		Random PosX, 18*XUnits,75*XUnits
+		Random PosY, 22*YUnits + (MissionNumber -3) *24*YUnits, 24*YUnits + (MissionNumber-3) *24*YUnits
 		StateUpdate("Clicked at: " . PosX . "," . PosY . ". Special Mission " . MissionNumber . " Selected") 
 		ClickAtLocation(PosX, PosY)	
 		
@@ -233,33 +238,36 @@ selectDifficulty:
 		Sleep SleepTime
 		TimeUpdate(t)
 		t+=500
-	}Until (SearchForImage("NEXT.png"))
+	}Until (SearchForImage("Next1600x900.png"))
 	
 	;Click on correct diff setting
 	Gui, Submit, NoHide
 	StateUpdate("Mission number: " . MissionNumber . ". Difficulty: " . DifficultyNumber)
-	Random PosX, 260,750
-	Random PosY, 180 + DifficultyNumber *145, 190 + DifficultyNumber *145
+	Random PosX, 18*XUnits,30*XUnits
+	Random PosY, 20*YUnits + 15*YUnits*DifficultyNumber , 21*YUnits + DifficultyNumber*15*YUnits
+	StateUpdate(PosY)
+	sleep 4*SleepTime
 	ClickAtLocation(PosX, PosY)	
 	Sleep 3*SleepTime
 	
 	;If Details is present then click Next
-	if(SearchForImage("Details.png")){	;If details is present after clicking mission number proceed to press next
+	if(SearchForImage("Details1600x900.png")){	;If details is present after clicking mission number proceed to press next
 		StateUpdate("Details found")
-		Random PosX, 960, 1180
-		Random PosY, 910, 960
+		;Pres Next
+		Random PosX, 58*XUnits, 71*XUnits
+		Random PosY, 91*YUnits, 93*YUnits
 		ClickAtLocation(PosX, PosY)
 	} else{								;If details is not present then no mission is slected so reselect mission
 		StateUpdate("Mission Reslected and Nextpressed")
 		sleep 2*SleepTime
-		Random PosX, 260,750
-		Random PosY, 200 + DifficultyNumber *150, 240 + DifficultyNumber *150
+		Random PosX, 18*XUnits,30*XUnits
+		Random PosY, 20*YUnits + 15*YUnits*DifficultyNumber , 21*YUnits + DifficultyNumber*15*YUnits
 		ClickAtLocation(PosX, PosY)
 		
 		sleep 3*SleepTime
 		;Press Next
-		Random PosX, 960, 1180
-		Random PosY, 910, 960
+		Random PosX, 58*XUnits, 71*XUnits
+		Random PosY, 91*YUnits, 93*YUnits
 		ClickAtLocation(PosX, PosY)
 	}	
 return
@@ -272,27 +280,30 @@ okBtnSmall:
 		
 		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
 		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until (SearchForImage("OkButtonSmall.png"))
-	Random, PosX, 765, 875
-	Random, PosY, 910, 940
+	}Until (SearchForImage("OkButtonSmall1600x900.png"))
+	Random, PosX, 46*XUnits, 50*XUnits
+	Random, PosY, 89*YUnits, 91*YUnits
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". OkButton pressed")
 	ClickAtLocation(PosX, PosY)
-	sleep 2*SleepTime
 	return
 return
 startAtkMis:
 	
-	Random, PosX, 540, 710
-	Random, PosY, 700, 840
+	Random, PosX, 32*XUnits, 40*XUnits
+	Random, PosY, 66*YUnits, 72*YUnits
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". Started Attack Mission") 
 	ClickAtLocation(PosX, PosY)
 	return	
 confirmAtkMis:
 	Gui,Submit, NoHide
-	Random, PosX, 1000, 1120
-	Random, PosY, 755, 795
+	Loop{
+		Sleep SleepTime
+		TimeUpdate(t)
+		t+=500
+	}Until (SearchForImage("AttackMissionYes1600x900.png"))
+	Random, PosX, 60*XUnits, 67*XUnits
+	Random, PosY, 75*YUnits, 76*YUnits
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". Confirm pressed")
-	
 	ClickAtLocation(PosX, PosY) 
 	return
 okBtn:
@@ -304,10 +315,10 @@ okBtn:
 		
 		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
 		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until (SearchForImage("OkButton.png"))
+	}Until (SearchForImage("OkButton1600x900.png"))
 	sleep 1000
-	Random, PosX, 765, 875
-	Random, PosY, 910, 940
+	Random, PosX, 45*XUnits, 49*XUnits
+	Random, PosY, 91*YUnits, 92*YUnits
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". OkButton pressed")
 	ClickAtLocation(PosX, PosY)
 	
@@ -315,16 +326,14 @@ okBtn:
 autoBtn:
 	t:=0
 	Loop{
-		Sleep, 2*SleepTime
+		Sleep, SleepTime
 		TimeUpdate(t)
-		t+=1000
+		t+=500
 		
-		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
-		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until (SearchForImage("AutoButton.png"))
+	}Until (SearchForImage("AutoButton1600x900.png"))
 	sleep 2*SleepTime
-	Random, PosX, 740, 890
-	Random, PosY, 975, 990
+	Random, PosX, 44*XUnits, 48*XUnits
+	Random, PosY, 91*YUnits, 92*YUnits
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". AutoButton pressed")
 	ClickAtLocation(PosX, PosY) 
 	
@@ -363,10 +372,10 @@ touch:
 		t+=500
 		;TRY- get the active window at end of script WinGetActiveTitle, LastWindow
 		;	Then set that window back to active on next loop WinActivate LastWindow
-	}Until (SearchForImage("Touch.png"))
+	}Until (SearchForImage("Touch1600x900.png"))
 	sleep 2*SleepTime
-	Random, PosX, 550, 1110
-	Random, PosY, 800, 950
+	Random, PosX, 37*XUnits, 66*XUnits
+	Random, PosY, 84*YUnits, 92*YUnits
 	StateUpdate("Clicked at: " . PosX . "," . PosY . ". First Touch pressed")
 	ClickAtLocation(PosX, PosY)
 	t:=0
@@ -375,7 +384,8 @@ touch:
 	
 UpdateState:
 	TimeUpdate("10")
-	StateUpdate("This is an update")
+	StateUpdate(50*XUnits +1920)
+	MouseMove 50*XUnits, 500, 50
 	return
 
 
@@ -406,74 +416,63 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 		IfNotExist, %Img% 
 		MsgBox Error: Your file either doesn't exist or isn't in this location.
 			
-		;~~Image case statment Relative to Main game	
+		;Image case statment Relative to screen	
 		; if (Img = "Touch.png"){
-			; lowerX := 450
-			; upperX := 1180
-			; lowerY:= 780
-			; upperY:= 1180
+			; lowerX := 28*XUnits+1920
+			; upperX := 70*XUnits+1920
+			; lowerY:= 86*YUnits
+			; upperY:= 100*YUnits
 		; } else if(Img = "AttackMissionToken.png"){
-			; lowerX := 190
-			; upperX := 246
-			; lowerY:= 47
-			; upperY:= 96
-		; } else {
+			; lowerX := 195 +1920 
+			; upperX := 245 +1920
+			; lowerY:= 75
+			; upperY:= 125
+		; } 
+		; else if(Img = "OkButton.png" or Img ="OkButtonSmall.png"){
+			; lowerX:= 40*XUnits+1920  
+			; upperX:= 64*XUnits+1920 
+			; lowerY:= 93*YUnits 
+			; upperY:= 108*YUnits 
+		; }else if(Img = "AutoButton.png"){
+			; lowerX:= 40*XUnits+1920
+			; upperX:= 64*XUnits+1920
+			; lowerY:= 93*YUnits
+			; upperY:= 108*YUnits
+		; }else if(Img = "NEXT.png"){
+			; lowerX:= 53*XUnits+1920
+			; lowerY:= 86*YUnits
+			; upperX:= 76*XUnits+1920
+			; upperY:= 98*YUnits
+		
+		; }else if(Img = "Details.png" or Img="Details1600x900.png"){
+			; lowerX:= 1920
+			; lowerY:= 0
+			; upperX:= 1600 +1920
+			; upperY:= 900
+			; lowerX:= 70*XUnits +1920
+			; lowerY:= 68*YUnits
+			; upperX:= 86*XUnits +1920
+			; upperY:= 80*YUnits
+			; StateUpdate(lowerX)
+		; } else if(Img = "YES.png"){
+			; lowerX:= 900+1920
+			; lowerY:= 700
+			; upperX:=1200+1920
+			; upperY:= 900
+		; }else {
 			; lowerX := 10
 			; upperX := 30
 			; lowerY:= 10
 			; upperY:= 30
 		; }
-		;Image case statment Relative to screen	
-		if (Img = "Touch.png"){
-			lowerX := 450+1920
-			upperX := 1180+1920
-			lowerY:= 780
-			upperY:= 1180
-		} else if(Img = "AttackMissionToken.png"){
-			lowerX := 195 +1920 
-			upperX := 245 +1920
-			lowerY:= 75
-			upperY:= 125
-		} 
-		else if(Img = "OkButton.png" or Img ="OkButtonSmall.png"){
-			lowerX:= 640+1920
-			upperX:= 1025+1920
-			lowerY:= 837
-			upperY:= 1050
-		}else if(Img = "AutoButton.png"){
-			lowerX:= 640+1920
-			upperX:= 1025+1920
-			lowerY:= 937
-			upperY:= 1050
-		}else if(Img = "NEXT.png"){
-			lowerX:= 890+1920
-			lowerY:= 860
-			upperX:=1270+1920
-			upperY:= 1050
-		
-		}else if(Img = "Details.png"){
-			lowerX:= 1110+1920
-			lowerY:= 700
-			upperX:=1440+1920
-			upperY:= 800
-		} else if(Img = "YES.png"){
-			lowerX:= 900+1920
-			lowerY:= 700
-			upperX:=1200+1920
-			upperY:= 900
-		}else {
-			lowerX := 10
-			upperX := 30
-			lowerY:= 10
-			upperY:= 30
-		}
 		
 		; MouseMove, lowerX, lowerY, 50
 		; sleep 500
 		; MouseMove, upperX, upperY, 50
 		; sleep 500
 		
-		ImageSearch, LocX, LocY, lowerX, lowerY, upperX, upperY, *100 %Img% ;last remaining token
+		;Searching Full screen. Seems fast enough
+		ImageSearch, LocX, LocY, 1920, 0, 1920+1600, 900, *100 %Img% ;last remaining token
 		;ImageSearch, LocX, LocY, 330, 40, 380, 94, *100 AttackMissionToken.png ;one missing
 		;MsgBox, second image found at %LocX%, %LocY%
 		if(LocX>0 and LocY>0){
@@ -491,7 +490,7 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 ;--------------Test things ------------------
 SearchForCertainImage:
 
-	if(SearchForImage("YES.png")){
+	if(SearchForImage("OkButton1600x900.png")){
 	msgbox, image found 
 	}
 	else{
