@@ -25,9 +25,10 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;[X] Search for OK Button (in order to deal with connection errors. 
 ;[X] Adjustable resolution -1600x900 works for sure
 ;[]Will need a break if it doesn't find Auto some time after)
-;[] Update UI 
+;[X] Update UI 
 ;[] Near full mission automation (story->attack->story->etc)
 ;[] Work from any Screen
+;[] Reset special mission difficulty to scrolled to top every time
 
 
 ;Optional
@@ -43,7 +44,7 @@ SetWorkingDir, D:\AutoHotKey\Scripts\Naruto\Images
  
 State:= "Initial State"
 ElapsedTime := 0
-SleepTime:=500
+SleepTime:=600
 global XRes:= 1600
 global YRes:= 900
 global XUnits:= XRes//100
@@ -107,19 +108,20 @@ return
 
 
 ;---------Main Routines---------------------\
-FullRun:
-	Loop{
+FullRun:    ;special mission doesnt end at mission screen. Need to set up screen crawling AI
+	 
 	gosub AttackMission
-		if(EndLoop=True){			;Break loop after current Attack mission  ends
-			StateUpdate("Attack Loop was ended by user")
-			break
-		}
+		; if(EndLoop=True){			;Break loop after current Attack mission  ends
+			; StateUpdate("Attack Loop was ended by user")
+			; break
+		; }
 	gosub SpecialMission
-		if(EndLoop=True){			;Break loop after current Special mission ends
-			StateUpdate("Special Loop was ended by user")
-			break
-		}
-	}
+		; if(EndLoop=True){			;Break loop after current Special mission ends
+			; StateUpdate("Special Loop was ended by user")
+			; break
+		; }
+	
+
 return
 
 SetEnd:
@@ -147,11 +149,7 @@ AttackMission:
 ;6) Click to loot rewards. Wait some time
 ;6) Repeat (if starts at mission screen again)
 
-	
-	IfWinExist, Main game
-		WinActivate, Main game
-	else
-		msgbox Game isnt open
+
 	
 	;Loop while attack mission token exists
 	Loop{
@@ -169,6 +167,7 @@ AttackMission:
 				Random PosX, 84*XUnits, 85*XUnits
 				Random PosY, 14*YUnits, 15*YUnits
 				ClickAtLocation(PosX, PosY)
+				sleep 3*SleepTime
 				return 
 			}else{
 			gosub, okBtn 
@@ -247,9 +246,10 @@ selectSpecialMission:
 		StateUpdate("Clicked at: " . PosX . "," . PosY . ". Special Mission " . MissionNumber . " Selected") 
 		ClickAtLocation(PosX, PosY)		
 	} else{
-		Random PosX, 87*XUnits, 88*XUnits
-		Random PosY, 86*YUnits, 87*YUnits
+		Random PosX, 88*XUnits, 88*XUnits
+		Random PosY, 87*YUnits, 88*YUnits
 		StateUpdate("Scrolled down")
+		ClickAtLocation(PosX, PosY)
 		ClickAtLocation(PosX, PosY)
 		sleep SleepTime
 		
@@ -273,27 +273,28 @@ selectDifficulty:
 	Gui, Submit, NoHide
 	StateUpdate("Mission number: " . MissionNumber . ". Difficulty: " . DifficultyNumber)
 	Random PosX, 18*XUnits,30*XUnits
-	Random PosY, 20*YUnits + 15*YUnits*DifficultyNumber , 21*YUnits + DifficultyNumber*15*YUnits
+	Random PosY, 20*YUnits + 14*YUnits*DifficultyNumber , 21*YUnits + DifficultyNumber*14*YUnits
 	StateUpdate(PosY)
-	sleep 4*SleepTime
+	sleep SleepTime
 	ClickAtLocation(PosX, PosY)	
-	Sleep 3*SleepTime
+	Sleep SleepTime
 	
 	;If Details is present then click Next
 	if(SearchForImage("Details1600x900.png")){	;If details is present after clicking mission number proceed to press next
 		StateUpdate("Details found")
+		SLEEP Sleeptime
 		;Pres Next
 		Random PosX, 58*XUnits, 71*XUnits
 		Random PosY, 91*YUnits, 93*YUnits
 		ClickAtLocation(PosX, PosY)
 	} else{								;If details is not present then no mission is slected so reselect mission
 		StateUpdate("Mission Reslected and Nextpressed")
-		sleep 2*SleepTime
+		sleep SleepTime
 		Random PosX, 18*XUnits,30*XUnits
-		Random PosY, 20*YUnits + 15*YUnits*DifficultyNumber , 21*YUnits + DifficultyNumber*15*YUnits
+		Random PosY, 20*YUnits + 14*YUnits*DifficultyNumber , 21*YUnits + DifficultyNumber*14*YUnits
 		ClickAtLocation(PosX, PosY)
 		
-		sleep 3*SleepTime
+		sleep SleepTime
 		;Press Next
 		Random PosX, 58*XUnits, 71*XUnits
 		Random PosY, 91*YUnits, 93*YUnits
@@ -453,7 +454,7 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 ;--------------Test things ------------------
 SearchForCertainImage:
 
-	if(SearchForImage("OkButton1600x900.png")){
+	if(SearchForImage("Details1600x900.png")){
 	msgbox, image found 
 	}
 	else{
@@ -487,6 +488,7 @@ Test:
 	; ClickAtLocation(PosX, PosY)
 	
 	
+	
 	if (SearchForImage("AttackMissionToken.png")){
 		MsgBox, image found
 		} else{
@@ -499,6 +501,21 @@ ExitApp
 return
 ; -------------------- Main Script -----------------
 Pause Off
+!Numpad0:: 
+	ControlClick,  x1390 y760, Main game,
+return
+!Numpad1:: 
+	ControlClick,  x1175 y825, Main game,
+Return
+!Numpad2:: 
+	ControlClick,  x1200 y650, Main game,
+Return
+!Numpad3:: 
+	ControlClick,  x1300 y540, Main game,
+Return
+!NumpadEnter:: 
+	ControlClick,  x1460 y540, Main game,
+Return
 !Esc:: Reload
 ^Esc:: Pause
 +Esc:: ExitApp
