@@ -35,6 +35,13 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;[] Ult after 'Enemy appears'
 ;[] Review macro level design. Handle outlier cases such as lvl up and academy upgrades
 
+;2/19 Updates
+;Drop down menu for searching for certain ImageSearch
+;LocX and LocY are global variables that store the location of found image
+;Starting a fresh raid mission complete (although combat needs programming)
+;continues failed runs or starts new run if succcess
+;!!! Need a way to prevent people from joining or handle it somehow
+;TODO: add combat
 
 
 SetWorkingDir, D:\AutoHotKey\Scripts\Naruto\Images
@@ -45,12 +52,15 @@ SetWorkingDir, D:\AutoHotKey\Scripts\Naruto\Images
 State:= "Initial State"
 ElapsedTime := 0
 SleepTime:=600
+LocX:= 0
+LocY:=0
 global XRes:= 1600
 global YRes:= 900
 global XUnits:= XRes//100
 global YUnits:= YRes//100
 global debugMode:= False
 global EndLoop := False
+global ImageChoice:="a"
 
 CoordMode Pixel, Screen
 CoordMode Mouse, Screen
@@ -69,6 +79,7 @@ gui, Add, Text, x+10 w40 h30,
 gui, add, UpDown, x+10 vMissionNumber Range1-5, 1 
 gui, Add, Text, x+10 w40 h30,
 gui, add, UpDown, x+10 vDifficultyNumber Range1-4, 1
+gui, add, Button, xs w125 r1 gRaidMission, Raid Mission
 gui, add, Button, xs w125 r1 gFullRun, Full Run
 gui, add, button, w125  r1 gSetEnd, End After this Run
 gui, add, text, x+25 w150 r2 vAlertEnd, State: %AlertEnd%
@@ -81,6 +92,7 @@ gui, add, text, w250 cGreen r1 vState, %State%
 gui, add, text, w250 cRed r1, SleepTime(ms)
 gui, add, Edit, w75 r1 vSleepTime, %SleepTime%
 gui, Add, Button, y+20 w100 h20 gSearchForCertainImage, Search for Image
+gui, Add, DropDownList, vImageChoice, Details1600x900.png|OKbutton1600x900.png|Unseal1600x900.png|UnsealTags1600x900.png|YesSeals1600x900.png|GuildOnlyCheckBox1600x900.png|Leave1600x900.png
 gui, Add, Button, w100 r1 gUpdateState, Test for state updates
 gui, Add, Button, w100 h25 gTest2, Test for Touch
 ; StartX:=2090
@@ -136,6 +148,165 @@ SetEnd:
 			EndLoop:=True
 		}
 Return	
+RaidMission:
+;*****Raid Mission Logic*****
+;1)Start at mission Screen
+;2)Click Surp Atk Mission
+
+;)Look for "beginner" then click beginner. WaitClose
+;)look for OK and Click
+;)Look for Unseal Currency box and Click
+;)Look for Yes to confirm spending unseal tokens then click Yes
+;)Look for skip and Click
+;PartyForm)Look for LEAVE and Click OK. wait 
+;) Look for second OK
+;n)Combat logic
+	;spam attack
+;Loop while attack mission token exists
+	Loop{
+			if(EndLoop=True){
+				Break
+			}
+		;Click on attack mission
+			Gosub, startRaidMission
+		;Click Unseal
+			gosub, unseal
+			
+		gosub, missionSuccess
+					
+					msgbox out of missionSuccess
+		
+		gosub, partyFormation
+		
+		gosub, combat
+		
+		;touch to end
+			gosub, touch
+		;touch to get results
+			gosub, touch
+		;touch to get rewards
+			gosub, touch
+		
+		StateUpdate("Current attempt ended")
+			sleep SleepTime*25
+			StateUpdate("Woke up")
+		if(SearchForImage("Leave1600x900.png")){ ;when this is true we failed the mission
+			gosub, partyFormation
+		}else{
+			gosub, missionSuccess
+		}
+		
+		
+		
+	}
+	StateUpdate("Completed Attack Missions")	
+;)Find touch (old touch works) then Click
+;)??? Does touch show up on bottom of screen when the OK rewards are happening??
+;)Look for touch, but if find OK then click, then wait some time and look again
+;)If OK looking times out then look for touch and Click for end of XP Screen
+;)Look for touch again and click for Drops Reward screen
+;)On victory we go back to Unseal screen
+;)On Fail goes back to PartyForm screen go back to loop ok twice
+Return
+partyFormation:
+			;Confirm party ready
+				gosub, okBtn
+			;Ok the shinobi ready
+				gosub, okBtn
+		return
+missionSuccess:
+			;check guildOnlyBox
+				gosub, guildOnly
+			;First OK button
+				gosub, okBtn 
+			;remove Checked
+				gosub, removeCheck
+			;click invite
+				gosub, invite
+			;Confirm spending tags
+				gosub, spendTags
+			;Confirm again
+				gosub, yesSealsButton
+				;press skip
+				gosub, skipButton
+		return
+startRaidMission:
+	Random, PosX, 75*XUnits, 80*XUnits
+	Random, PosY, 66*YUnits, 72*YUnits
+	StateUpdate("Clicked at: " . PosX . "," . PosY . ". Started Raid Mission") 
+	ClickAtLocation(PosX, PosY)
+return
+
+unseal:
+	Loop{
+		Sleep SleepTime
+		TimeUpdate(t)
+		t+=500
+	}Until (SearchForImage("Unseal1600x900.png"))
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". Click Unseal") 
+	ClickAtLocation(LocX, LocY)
+return 
+guildOnly:
+	Loop{
+		Sleep SleepTime
+		TimeUpdate(t)
+		t+=500
+	}Until (SearchForImage("GuildOnlyCheckBox1600x900.png"))
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". checked Guild only") 
+	ClickAtLocation(LocX, LocY)
+return 
+removeCheck:
+	Loop{
+		Sleep SleepTime
+		TimeUpdate(t)
+		t+=500
+	}Until (SearchForImage("RemoveChecked1600x900.png"))
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". check box removed") 
+	ClickAtLocation(LocX, LocY)
+return
+invite:
+	Loop{
+		Sleep SleepTime
+		TimeUpdate(t)
+		t+=500
+	}Until (SearchForImage("Invite1600x900.png"))
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". Invite clicked") 
+	ClickAtLocation(LocX, LocY)
+return
+
+spendTags:
+	Loop{
+		Sleep SleepTime
+		TimeUpdate(t)
+		t+=500
+	}Until (SearchForImage("UnsealTags1600x900.png"))
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". spent tags") 
+	ClickAtLocation(LocX, LocY)
+return
+
+yesSealsButton:
+Loop{
+		Sleep SleepTime
+		TimeUpdate(t)
+		t+=500
+		StateUpdate("Still searching")
+	}Until (SearchForImage("YesSeals1600x900.png"))
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". Click Yes") 
+	ClickAtLocation(LocX, LocY)
+return
+
+skipButton:
+Loop{
+		Sleep SleepTime
+		TimeUpdate(t)
+		t+=500
+	}Until (SearchForImage("Skip1600x900.png"))
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". skipped") 
+	ClickAtLocation(LocX, LocY)
+return
+
+combat:
+Return
 
 AttackMission:
 ;****Attack Mission Logic*****
@@ -164,9 +335,9 @@ AttackMission:
 			Sleep 4*SleepTime
 			if(SearchForImage("Yes1600x900.png")){
 				;click X due to no resources
-				Random PosX, 84*XUnits, 85*XUnits
-				Random PosY, 14*YUnits, 15*YUnits
-				ClickAtLocation(PosX, PosY)
+					;Random PosX, 84*XUnits, 85*XUnits
+					;Random PosY, 14*YUnits, 15*YUnits
+				ClickAtLocation(LocX, LocY)
 				sleep 3*SleepTime
 				return 
 			}else{
@@ -204,9 +375,9 @@ Loop {
 	gosub selectDifficulty
 	sleep 4*SleepTime
 		if(SearchForImage("Yes1600x900.png")){
-			Random PosX, 84*XUnits, 85*XUnits
-			Random PosY, 14*YUnits, 15*YUnits
-			ClickAtLocation(PosX, PosY)
+				; Random PosX, 84*XUnits, 85*XUnits
+				; Random PosY, 14*YUnits, 15*YUnits
+			ClickAtLocation(LocX, LocY)
 			StateUpdate("Out of resource. Loop broken")
 			return 
 		}else{
@@ -309,10 +480,10 @@ okBtnSmall:
 		TimeUpdate(t)
 		t+=500
 	}Until (SearchForImage("OkButtonSmall1600x900.png"))
-	Random, PosX, 46*XUnits, 50*XUnits
-	Random, PosY, 89*YUnits, 91*YUnits
-	StateUpdate("Clicked at: " . PosX . "," . PosY . ". OkButton pressed")
-	ClickAtLocation(PosX, PosY)
+	;Random, PosX, 46*XUnits, 50*XUnits
+	;Random, PosY, 89*YUnits, 91*YUnits
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". OkButton pressed")
+	ClickAtLocation(LocX, LocY)
 	
 return
 
@@ -330,10 +501,10 @@ confirmAtkMis:
 		TimeUpdate(t)
 		t+=500
 	}Until (SearchForImage("AttackMissionYes1600x900.png"))
-	Random, PosX, 60*XUnits, 67*XUnits
-	Random, PosY, 75*YUnits, 76*YUnits
-	StateUpdate("Clicked at: " . PosX . "," . PosY . ". Confirm pressed")
-	ClickAtLocation(PosX, PosY) 
+		; Random, PosX, 60*XUnits, 67*XUnits
+		; Random, PosY, 75*YUnits, 76*YUnits
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". Confirm pressed")
+	ClickAtLocation(LocX, LocY) 
 return
 
 okBtn:
@@ -344,10 +515,10 @@ okBtn:
 		t+=500
 	}Until (SearchForImage("OkButton1600x900.png"))
 	sleep 2*SleepTime
-	Random, PosX, 45*XUnits, 49*XUnits
-	Random, PosY, 91*YUnits, 92*YUnits
-	StateUpdate("Clicked at: " . PosX . "," . PosY . ". OkButton pressed")
-	ClickAtLocation(PosX, PosY)
+	;Random, PosX, 45*XUnits, 49*XUnits
+	;Random, PosY, 91*YUnits, 92*YUnits
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". OkButton pressed")
+	ClickAtLocation(LocX, LocY)
 Return
 
 autoBtn:
@@ -359,10 +530,10 @@ autoBtn:
 		
 	}Until (SearchForImage("AutoButton1600x900.png"))
 	sleep 2*SleepTime
-	Random, PosX, 44*XUnits, 48*XUnits
-	Random, PosY, 91*YUnits, 92*YUnits
-	StateUpdate("Clicked at: " . PosX . "," . PosY . ". AutoButton pressed")
-	ClickAtLocation(PosX, PosY) 
+		; Random, PosX, 44*XUnits, 48*XUnits
+		; Random, PosY, 91*YUnits, 92*YUnits
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". AutoButton pressed")
+	ClickAtLocation(LocX, LocY) 
 return
 	
 PressUlt:
@@ -386,10 +557,10 @@ touch:
 		t+=500
 	}Until (SearchForImage("Touch1600x900.png"))
 	sleep 2*SleepTime
-	Random, PosX, 37*XUnits, 66*XUnits
-	Random, PosY, 84*YUnits, 92*YUnits
-	StateUpdate("Clicked at: " . PosX . "," . PosY . ". First Touch pressed")
-	ClickAtLocation(PosX, PosY)
+		; Random, PosX, 37*XUnits, 66*XUnits
+		; Random, PosY, 84*YUnits, 92*YUnits
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ".  Touch pressed")
+	ClickAtLocation(LocX, LocY)
 return 
 	
 	
@@ -436,9 +607,11 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 			; MouseMove, upperX, upperY, 50
 			; sleep 500
 		}
-		
+		global LocX
+		global LocY
 		;Searching Full screen. Seems fast enough
 		ImageSearch, LocX, LocY, 1920, 0, 1920+1600, 900, *100 %Img% ;last remaining token
+		LocX:= LocX -1920
 		if(LocX>0 and LocY>0){
 			StateUpdate(Img) 
 			flag:= True
@@ -453,9 +626,11 @@ SearchForImage(Img){					;Make this take in an image type and specify coords bas
 	
 ;--------------Test things ------------------
 SearchForCertainImage:
-
-	if(SearchForImage("Touch1600x900.png")){
-	msgbox, image found 
+	Gui, Submit, NoHide
+	global LocX
+	global LocY
+	if(SearchForImage(ImageChoice)){
+	msgbox, image found %LocX% %LocY%
 	}
 	else{
 	msgbox, image not found
