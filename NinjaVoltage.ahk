@@ -9,17 +9,17 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;[X] Be able to specify a location to be clicked, then force a click at that location
 ;[X] Be able to specify a relative location on a window (Prob have to force window active)
 ;[X] Determine click location logic for one type of Run 
-;	[X] ATK MIS (Working on ending once "Touch" shows up)
+;	[X] ATK MIS (Working on ending once "touch" shows up)
 ;[X] Get image search to work
 ;	[X] attack token
-;	[X]	Touch
+;	[X]	touch
 ;[]Recursion to play until out of tokens 
 ;[X] research what conditional logic I can employ to make sure what screen I'm On
 	;[X] ImageSearch
 ;[]Add debugging features for Gui	
 ;	[X] Text output for what routine im On
 ;	[X] Text output for conditional case
-;[X] End mission early if Touch exists, or timeout
+;[X] End mission early if touch exists, or timeout
 ;	[SOLVED]!!!!!!!!!!!!!!!!!!!!!!Nox keeps stealing focus!!!!!!
 ; 		-Can use absolute coords and not even activate window Ever. (This may be easier)
 ;[X] Search for OK Button (in order to deal with connection errors. 
@@ -42,10 +42,18 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;continues failed runs or starts new run if succcess
 ;Prevented people from joining my game
 ;Added combat (Hero Dependent)
+;TODO Looping mechanism is off after a success or failure. Need to change the sub routines. oops
 ;TODO Fort Medal purchasing
 ;TODO back out of Special Mission completion
 ;TODO Raid Mission stop condition
 ;TODO look into performance issues (Perhaps replace the timer with someother information)
+
+;2/20 Updates
+;Looping for infinite Raid Missions. Assumes you will alwasy have enough seals
+;added subroutine to handle pressing OK from extra loot at end of raid
+;
+
+;TODO Reset run when game unexpected errs out
 
 
 SetWorkingDir, D:\AutoHotKey\Scripts\Naruto\Images
@@ -85,9 +93,12 @@ gui, add, UpDown, x+10 vMissionNumber Range1-5, 1
 gui, Add, Text, x+10 w40 h30,
 gui, add, UpDown, x+10 vDifficultyNumber Range1-4, 1
 gui, add, Button, xs w125 r1 gRaidMission, Raid Mission
+gui, add, DropDownList, vHero, Sakura|Naruto||Kakashi|Gaara|Shizune
 gui, add, Button, xs w125 r1 gFullRun, Full Run
 gui, add, button, w125  r1 gSetEnd, End After this Run
 gui, add, text, x+25 w150 r2 vAlertEnd, State: %AlertEnd%
+gui, add, button, xs w125 r1 gpurchaseHeroFragments, Purchase Left most Hero Fragments
+gui, add, Edit, x+10 r1 w30 vNumberOfFragments, 
 
 
 Gui,Tab,2
@@ -153,7 +164,9 @@ SetEnd:
 			EndLoop:=True
 		}
 Return	
-RaidMission:
+
+
+
 ;*****Raid Mission Logic*****
 ;1)Start at mission Screen
 ;2)Click Surp Atk Mission
@@ -174,43 +187,44 @@ RaidMission:
 ;)Look for touch again and click for Drops Reward screen
 ;)On victory we go back to Unseal screen
 ;)On Fail goes back to PartyForm screen go back to loop ok twice
+RaidMission:
+	gosub startRaidMission
+	gosub unseal
+	gosub missionSuccess
+	gosub partyFormation
+	gosub combat
+	gosub touchWithOKButton
+	gosub touch
+	gosub conditional
+return
 
-	Loop {
-			if(EndLoop=True){
-				Break
-			}
-		;Click on attack mission
-			Gosub, startRaidMission
-		;Click Unseal
-			gosub, unseal
-			
-		gosub, missionSuccess
-		
-		gosub, partyFormation
-		
-		gosub, combat
-		
-		;touch to end
-			gosub, touch
-		;touch to get results
-			gosub, touch
-		;touch to get rewards
-			gosub, touch
-		
-		StateUpdate("Current attempt ended")
-			sleep SleepTime*25
-			StateUpdate("Woke up")
-		if(SearchForImage("Leave1600x900.png")){ ;when this is true we failed the mission
-			gosub, partyFormation
-		}else{
-			gosub, missionSuccess
+successfulRun:
+	gosub missionSuccess
+	gosub partyFormation
+	gosub combat
+	gosub touchWithOKButton
+	gosub touch
+	gosub conditional
+return
+
+failedRun:
+	gosub partyFormation
+	gosub combat
+	gosub touch
+	gosub touchWithOKButton
+	gosub conditional
+return
+
+conditional:
+	StateUpdate("Current attempt ended")
+		sleep SleepTime*25
+		StateUpdate("Woke up")
+	if(SearchForImage("Leave1600x900.png")){ ;when this is true we failed the mission
+		gosub, failedRun
+	}else{
+		gosub, successfulRun
 		}
-		
-		
-		
-	}	
-
-Return
+return
 partyFormation:
 			;Confirm party ready
 				gosub, OKButton
@@ -218,6 +232,8 @@ partyFormation:
 				gosub, OKButton
 		return
 missionSuccess:
+			;select Intermediate
+				;gosub, selectIntermediateDifficulty
 			;check guildOnlyBox
 				gosub, guildOnly
 			;First OK button
@@ -298,18 +314,21 @@ Loop{
 	ClickAtLocation(LocX, LocY)
 return
 
-skipButton:
+selectIntermediateDifficulty:
 Loop{
 		Sleep SleepTime
 		TimeUpdate(t)
 		t+=500
-	}Until (SearchForImage("Skip1600x900.png"))
-	StateUpdate("Clicked at: " . LocX . "," . LocY . ". skipped") 
-	ClickAtLocation(LocX, LocY)
+	}Until (SearchForImage("GuildOnlyCheckBox1600x900.png"))
+	StateUpdate("Clicked at: " . 360 . "," . 505 . ". Intermediate Selected") 
+	ClickAtLocation(360, 505)
 return
 
 combat:
+	gui, Submit, NoHide
 	t:=0
+	MainCharacter:=Hero . "1600x900.png"
+	
 	Loop{
 		Sleep, SleepTime
 		TimeUpdate(t)
@@ -320,18 +339,18 @@ combat:
 			Sleep, 250
 		TimeUpdate(t)
 		t+=250
-		 if(SearchForImage("KickSmash1600x900.png")){
-			ControlClick,  x1300 y540, Main game, ;press kick
-		 }
-		 if(SearchForImage("Ult1600x900.png")){
+			ControlClick,  x1175 y825, Main game, ; press attack 1
+			
+			ControlClick,  x1200 y650, Main game, ; press attack 2
+			
+			ControlClick,  x1300 y540, Main game, ;press attack 3
+			
 			ControlClick,  x1460 y540, Main game, ;press ult
-		 }
-		 Else{
 			Loop 5{
 			ControlClick,  x1390 y760, Main game, ;press attack
 			sleep 250
 			}
-		}
+		
 
 	}
 	Loop{
@@ -341,13 +360,29 @@ combat:
 		if(SearchForImage("OKButton1600x900.png")){
 			gosub OKButton
 		}
-	}Until (SearchForImage("Touch1600x900.png"))
+	}Until (SearchForImage("touch1600x900.png"))
 	sleep 2*SleepTime
 		; Random, PosX, 37*XUnits, 66*XUnits
 		; Random, PosY, 84*YUnits, 92*YUnits
-	StateUpdate("Clicked at: " . LocX . "," . LocY . ".  Touch pressed")
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ".  touch pressed")
 	ClickAtLocation(LocX, LocY)
 	
+Return
+touchWithOKButton:
+sleep SleepTime
+Loop{
+		Sleep, SleepTime
+		TimeUpdate(t)
+		t+=500
+		if(SearchForImage("OKButton1600x900.png")){
+			gosub OKButton
+		}
+	}Until (SearchForImage("touch1600x900.png"))
+	sleep 2*SleepTime
+		; Random, PosX, 37*XUnits, 66*XUnits
+		; Random, PosY, 84*YUnits, 92*YUnits
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ".  touch pressed")
+	ClickAtLocation(LocX, LocY)
 Return
 
 AttackMission:
@@ -402,8 +437,8 @@ SpecialMission:
 ;Click small Ok
 ;Check if not enough LP by looking for NO Button
 ;Press Auto
-;Press Touch1
-;Press Touch2
+;Press touch1
+;Press touch2
 ;Repeat
 
 
@@ -426,8 +461,8 @@ Loop {
 		}else{
 		gosub OkBtnSmall
 		gosub AutoBtn
-		gosub Touch
-		gosub Touch
+		gosub touch
+		gosub touch
 		Sleep 15*SleepTime
 	}
 }
@@ -589,7 +624,7 @@ PressUlt:
 		Sleep, SleepTime
 	
 		t+=500
-	}Until (SearchForImage("Touch.png"))
+	}Until (SearchForImage("touch.png"))
 return
 
 touch:
@@ -598,13 +633,25 @@ touch:
 		Sleep, SleepTime
 		TimeUpdate(t)
 		t+=500
-	}Until (SearchForImage("Touch1600x900.png"))
+	}Until (SearchForImage("touch1600x900.png"))
 	sleep 2*SleepTime
 		; Random, PosX, 37*XUnits, 66*XUnits
 		; Random, PosY, 84*YUnits, 92*YUnits
-	StateUpdate("Clicked at: " . LocX . "," . LocY . ".  Touch pressed")
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ".  touch pressed")
 	ClickAtLocation(LocX, LocY)
 return 
+
+purchaseHeroFragments:
+	gui, submit, NoHide
+	Loop %NumberOfFragments%{
+		sleep SleepTime*5
+		Random, PosX, 5*XUnits, 10*XUnits
+		Random, PosY, 49*YUnits, 55*YUnits
+		ClickAtLocation(PosX, PosY)
+		gosub OKButton
+		gosub OKButton
+	}
+return
 	
 	
 UpdateState:
