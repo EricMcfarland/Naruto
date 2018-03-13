@@ -51,7 +51,8 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;2/20 Updates
 ;Looping for infinite Raid Missions. Assumes you will alwasy have enough seals
 ;added subroutine to handle pressing OK from extra loot at end of raid
-;
+;Updated Combat to press all Buttons (currently needed to be changed manual for various heros)
+;Updated combat to use various characters (Images for characters other than Naruto and Sakura will need to be add)
 
 ;TODO Reset run when game unexpected errs out
 
@@ -93,13 +94,13 @@ gui, add, UpDown, x+10 vMissionNumber Range1-5, 1
 gui, Add, Text, x+10 w40 h30,
 gui, add, UpDown, x+10 vDifficultyNumber Range1-4, 1
 gui, add, Button, xs w125 r1 gRaidMission, Raid Mission
-gui, add, DropDownList, vHero, Sakura|Naruto||Kakashi|Gaara|Shizune
+gui, add, DropDownList, vHero, Itachi|Sakura|Naruto||Kakashi|Gaara|Shizune
 gui, add, Button, xs w125 r1 gFullRun, Full Run
 gui, add, button, w125  r1 gSetEnd, End After this Run
 gui, add, text, x+25 w150 r2 vAlertEnd, State: %AlertEnd%
 gui, add, button, xs w125 r1 gpurchaseHeroFragments, Purchase Left most Hero Fragments
 gui, add, Edit, x+10 r1 w30 vNumberOfFragments, 
-
+gui, add, button, xs w125 r1 gshop, buy daily shop items
 
 Gui,Tab,2
 gui, add, Checkbox, vdebugMode, debug mode 
@@ -108,7 +109,7 @@ gui, add, text, w250 cGreen r1 vState, %State%
 gui, add, text, w250 cRed r1, SleepTime(ms)
 gui, add, Edit, w75 r1 vSleepTime, %SleepTime%
 gui, Add, Button, y+20 w100 h20 gSearchForCertainImage, Search for Image
-gui, Add, DropDownList, vImageChoice, Details1600x900.png|OKbutton1600x900.png|Unseal1600x900.png|UnsealTags1600x900.png|YesSeals1600x900.png|GuildOnlyCheckBox1600x900.png|Leave1600x900.png
+gui, Add, DropDownList, vImageChoice, Details1600x900.png|OKbutton1600x900.png|Unseal1600x900.png|UnsealTags1600x900.png|YesSeals1600x900.png|GuildOnlyCheckBox1600x900.png|Leave1600x900.png|Ryo1600x900.png
 gui, Add, Button, w100 r1 gUpdateState, Test for state updates
 gui, Add, Button, w100 h25 gcombat, Test combat
 ; StartX:=2090
@@ -339,16 +340,44 @@ combat:
 			Sleep, 250
 		TimeUpdate(t)
 		t+=250
+		if(Hero=="Itachi"){
 			ControlClick,  x1175 y825, Main game, ; press attack 1
 			
-			ControlClick,  x1200 y650, Main game, ; press attack 2
+			;ControlClick,  x1200 y650, Main game, ; press attack 2
+			
+			ControlClick,  x1300 y540, Main game, ;press attack 3
+			
+			;ControlClick,  x1460 y540, Main game, ;press ult
+			Loop 5{
+				ControlClick,  x1390 y760, Main game, ;press attack
+				sleep 250
+				}
+			}
+		else if(Hero=="Naruto"){
+			ControlClick,  x1175 y825, Main game, ; press attack 1
+				
+			;ControlClick,  x1200 y650, Main game, ; press attack 2
 			
 			ControlClick,  x1300 y540, Main game, ;press attack 3
 			
 			ControlClick,  x1460 y540, Main game, ;press ult
 			Loop 5{
-			ControlClick,  x1390 y760, Main game, ;press attack
-			sleep 250
+				ControlClick,  x1390 y760, Main game, ;press attack
+				sleep 250
+			}
+		}
+		else{
+				ControlClick,  x1175 y825, Main game, ; press attack 1
+				
+				ControlClick,  x1200 y650, Main game, ; press attack 2
+				
+				ControlClick,  x1300 y540, Main game, ;press attack 3
+				
+				ControlClick,  x1460 y540, Main game, ;press ult
+				Loop 5{
+					ControlClick,  x1390 y760, Main game, ;press attack
+					sleep 250
+				}
 			}
 		
 
@@ -598,6 +627,19 @@ OKButton:
 	StateUpdate("Clicked at: " . LocX . "," . LocY . ". OkButton pressed")
 	ClickAtLocation(LocX, LocY)
 Return
+shopItem:
+	t:=0
+	Loop{
+		Sleep, SleepTime
+		TimeUpdate(t)
+		t+=500
+	}Until (SearchForImage("Ryo1600x900.png"))
+	;sleep 2*SleepTime
+	;Random, PosX, 45*XUnits, 49*XUnits
+	;Random, PosY, 91*YUnits, 92*YUnits
+	StateUpdate("Clicked at: " . LocX . "," . LocY . ". Ryo price pressed")
+	ClickAtLocation(LocX, LocY)
+Return
 
 autoBtn:
 	t:=0
@@ -653,7 +695,19 @@ purchaseHeroFragments:
 	}
 return
 	
+shop:
+	ClickAtLocation(1470,775)
+	Sleep SleepTime
+	Loop {
+	gosub shopItem
+	gosub OKButton
+	gosub OKButton
+	Sleep SleepTime*3
+	} Until SearchForImage("Ryo1600x900.png")==False
+	StateUpdate("All items purchased")
 	
+	
+Return	
 UpdateState:
 	TimeUpdate("10")
 	StateUpdate(50*XUnits +1920)
