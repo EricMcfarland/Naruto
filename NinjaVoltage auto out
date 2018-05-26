@@ -64,7 +64,8 @@ SetWorkingDir, D:\AutoHotKey\Scripts\Naruto\Images
  
 State:= "Initial State"
 ElapsedTime := 0
-SleepTime:=808
+SleepTime:=600
+LocX:= 0
 LocY:=0
 MainCharacter:= "Sakura1600x900.png"
 global XRes:= 1600
@@ -93,7 +94,7 @@ gui, add, UpDown, x+10 vMissionNumber Range1-5, 1
 gui, Add, Text, x+10 w40 h30,
 gui, add, UpDown, x+10 vDifficultyNumber Range1-4, 1
 gui, add, Button, xs w125 r1 gRaidMission, Raid Mission
-gui, add, DropDownList, vHero, Itachi||Sakura|Naruto|Kakashi|Gaara|Shizune|Minato|Boruto|
+gui, add, DropDownList, vHero, Itachi|Sakura|Naruto|Kakashi|Gaara|Shizune|Minato||
 gui, add, Button, xs w125 r1 gFullRun, Full Run
 gui, add, button, w125  r1 gSetEnd, End After this Run
 gui, add, text, x+25 w150 r2 vAlertEnd, State: %AlertEnd%
@@ -219,7 +220,7 @@ return
 
 conditional:
 	StateUpdate("Current attempt ended")
-		sleep SleepTime*10
+		sleep SleepTime*20
 		StateUpdate("Woke up")
 	if(SearchForImage("Leave1600x900.png")){ ;when this is true we failed the mission
 		gosub, failedRun
@@ -233,26 +234,15 @@ partyFormation:
 			;Ok the shinobi ready
 				gosub, OKButton
 		return
-missionSuccessNoBox:
-	;select Intermediate
-				;gosub, selectIntermediateDifficulty
-	;First OK button
-		gosub, OKButton 
-	;Confirm spending tags
-		gosub, spendTags
-		;Confirm again
-		gosub, yesSealsButton
-return
-		
 missionSuccess:
 			;select Intermediate
-				;gosub, selectIntermediateDifficulty
+				gosub, selectIntermediateDifficulty
 			;check guildOnlyBox
 				gosub, guildOnly
 			;First OK button
 				gosub, OKButton 
 			;remove Checked
-				;gosub, removeCheck
+				gosub, removeCheck
 			;click invite
 				gosub, invite
 			;Confirm spending tags
@@ -333,7 +323,7 @@ Loop{
 		Sleep SleepTime
 		TimeUpdate(t)
 		t+=500
-	}Until (SearchForImage("OKButton1600x900.png"))
+	}Until (SearchForImage("GuildOnlyCheckBox1600x900.png"))
 	StateUpdate("Clicked at: " . 360 . "," . 505 . ". Intermediate Selected") 
 	ClickAtLocation(360, 505)
 return
@@ -379,23 +369,7 @@ combat:
 				sleep 250
 			}
 		}else if(Hero=="Minato"){
-			ControlClick,  x1460 y540, Main game, ;press ult
-			
-			ControlClick,  x1200 y650, Main game, ; press attack 2
-			
-			ControlClick,  x1175 y825, Main game, ; press attack 1
-				
-			
-			
-			;ControlClick,  x1300 y540, Main game, ;press attack 3
-			
-			
-			Loop 5{
-				ControlClick,  x1390 y760, Main game, ;press attack
-				sleep 250
-			}
-		}else if(Hero=="Boruto"){
-			ControlClick,  x1175 y825, Main game, ; press attack 1
+			;ControlClick,  x1175 y825, Main game, ; press attack 1
 				
 			ControlClick,  x1200 y650, Main game, ; press attack 2
 			
@@ -489,7 +463,7 @@ AttackMission:
 				return 
 			}else{
 			gosub, OKButton 
-			;gosub autobtn
+			gosub, autoBtn
 			gosub, touch
 			gosub, touch
 			Sleep 15*SleepTime
@@ -514,12 +488,11 @@ SpecialMission:
 
 gosub startSpecialMission
 	sleep 2*SleepTime
-Gosub selectSpecialMission
 Loop {
 	if(EndLoop=True){
 		Break
 	}
-	
+	Gosub selectSpecialMission
 	gosub selectDifficulty
 	sleep 4*SleepTime
 		if(SearchForImage("Yes1600x900.png")){
@@ -531,12 +504,10 @@ Loop {
 			return 
 		}else{
 		gosub OkBtnSmall
-		;gosub autobtn
+		gosub AutoBtn
 		gosub touch
 		gosub touch
-		StateUpdate("Sleeping")
 		Sleep 15*SleepTime
-		StateUpdate("Woke up")
 	}
 }
 StateUpdate("Completed Special Missions")
@@ -665,7 +636,7 @@ OKButton:
 		TimeUpdate(t)
 		t+=500
 	}Until (SearchForImage("OkButton1600x900.png"))
-	;sleep SleepTime
+	;sleep 2*SleepTime
 	;Random, PosX, 45*XUnits, 49*XUnits
 	;Random, PosY, 91*YUnits, 92*YUnits
 	StateUpdate("Clicked at: " . LocX . "," . LocY . ". OkButton pressed")
